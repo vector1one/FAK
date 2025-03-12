@@ -1,0 +1,113 @@
+---
+- name: Provision Ubuntu 24.04 server with Docker, Zeek, and Elastic Agent
+  hosts: localhost
+  gather_facts: no
+  vars:
+    proxmox_host: "proxmox.example.com"  # Replace with your Proxmox host
+    proxmox_user: "your_username"          # Replace with your Proxmox API username
+    proxmox_password: "your_password"      # Replace with your Proxmox API password
+    vm_id: 100                              # Change to your desired VM ID
+    vm_name: "ubuntu-24-04-zeek-elastic"   # Desired VM name
+    vm_memory: 2048                         # Memory in MB
+    vm_cores: 2                             # Number of CPU cores
+    vm_net_bridge: "vmbr0"                 # Network bridge
+    docker_compose_path: "/home/ubuntu/docker-compose.yml"  # Path for Docker Compose file on the VM
+
+  tasks:
+    - name: Create VM on Proxmox
+      proxmox_kvm:
+        api_user: "{{ proxmox_user }}"
+        api_password: "{{ proxmox_password }}"
+        api_host: "{{ proxmox_host }}"
+        vmid: "{{ vm_id }}"
+        name: "{{ vm_name }}"
+        cores: "{{ vm_cores }}"
+        memory: "{{ vm_memory }}"
+        net0: "virtio,bridge={{ vm_net_bridge }}"
+        ostype: "l26"  # Linux 2.6 / 3.x / 4.x
+        ide2: "local-lvm:cloudinit"
+        scsi0: "local-lvm:32"  # Disk size
+        boot: "order=scsi0"
+        state: present
+
+    - name: Wait for the VM to start
+      wait_for:
+        delay: 10
+        timeout: 600
+        state: started
+        host: "{{ proxmox_host }}"
+  
+    - name: Gather facts about the new VM
+      set_fact:
+        vm_ip: "{{ lookup('proxmox', 'ip', vmid=vm_id) }}"
+
+    - name: Install Docker and Docker Compose
+      ansible.builtin.apt:
+        name:
+          - docker.io
+          - docker-compose
+        state: present
+        update_cache: yes
+      become: yes
+      delegate_to: "{{ vm_ip }}"
+
+    - name: Create Docker Compose file
+      copy:
+        dest: "{{ docker_compose_path }}"
+        content: |
+          version: '3.8'
+          
+          services:
+            zeek:
+              image: zeek/zeek:latest
+              container_name: zeek
+              restart: unless-stopped
+              networks:
+                zeek_network:
+                  ipv4_address: 172.20.0.2
+              volumes:
+                - zeek_data:/opt/zeek/logs
+              cap_add:
+                - NET_ADMIN
+              command: >
+                zeek -i eth0 # Replace 'eth0' with your network interface if needed
+
+            elastic-agent:
+              image: elastic/elastic-agent:latest
+              container_name: elastic-agent
+              restart: unless-stopped
+              networks:
+                zeek_network:
+                  ipv4_address: 172.20.0.3
+              volumes:
+                - zeek_data:/opt/zeek/logs:ro
+                - elastic_agent_data:/usr/share/elastic-agent/data
+              environment:
+                - ELASTICSEARCH_HOST=https://your-elasticsearch-server:9200
+                - ELASTICSEARCH_USERNAME=your_username
+                - ELASTICSEARCH_PASSWORD=your_password
+                - KIBANA_HOST=https://your-kibana-server:5601
+              command: >
+                /usr/share/elastic-agent/bin/elastic-agent run
+
+          networks:
+            zeek_network:
+              driver: bridge
+              ipam:
+                config:
+                  - subnet: 172.20.0.0/16
+
+          volumes:
+            zeek_data:
+              driver: local
+            elastic_agent_data:
+              driver: local
+      become: yes
+      delegate_to: "{{ vm_ip }}"
+
+    - name: Start Docker Compose
+      command: "docker-compose up -d"
+      args:
+        chdir: "{{ docker_compose_path | dirname }}"
+      become: yes
+      delegate_to: "{{ vm_ip }}"
