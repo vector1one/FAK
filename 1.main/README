@@ -1,0 +1,48 @@
+Main/Base
+
+hypervisor ( proxmox/esxi/xcp)
+
+VM ( Ubuntu 24.04 server / desktop with linuxQOL tools)
+  OPNSense
+  HAL
+  T-HUNT
+  S-ADMIN
+  INT
+
+Container ( Docker)
+
+  Containers 
+    HAL
+      Cyberchef
+      Ethpad
+      Owncloud
+      thehive
+      cortex
+      intelowl
+      portainer
+      homer
+
+  T-HUNT
+    Zeek
+    Suricata
+    ELK
+      Elasticsearch
+      Kibana
+      Fleet
+    Velociraptor
+    portainer-agent
+
+  S-ADMIN
+      n8n
+	    remmina
+	    Uptime Kuma
+	    Planka
+	    Gitea
+	    IT-Tools
+    	grafana
+      portainer-agent
+
+  INT
+    misp
+    opencti
+    opencve
