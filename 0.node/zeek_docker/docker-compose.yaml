@@ -28,3 +28,29 @@ services:
       - /etc/suricata/rules:/etc/suricata/rules  # Mount rules directory
     command: ["suricata", "-c", "/etc/suricata/suricata.yaml", "-i", "ens33"]  # Use ens33 interface
 
+services:
+  elastic-agent:
+    image: docker.elastic.co/beats/elastic-agent:8.7.0  # Elastic Agent image
+    container_name: elastic-agent
+    restart: always
+    environment:
+      - ELASTICSEARCH_HOST=http://elasticsearch:9200  # Replace with actual Elasticsearch URL
+      - KIBANA_HOST=http://kibana:5601                # Replace with actual Kibana URL
+      - ELASTICSEARCH_USERNAME=elastic                # Set your Elasticsearch username
+      - ELASTICSEARCH_PASSWORD=your-password-here     # Set your Elasticsearch password
+    networks:
+      - HIL
+    volumes:
+      - ./elastic-agent/config:/usr/share/elastic-agent/config  # Mount your config folder (optional)
+    command: >
+      /usr/share/elastic-agent/elastic-agent enroll
+      --url=http://fleet-server:8220                      # URL to Fleet Server (if you have one)
+      --enrollment-token=your-enrollment-token-here        # Replace with your enrollment token
+      --insecure                                          # Optional: Skip TLS validation (useful for testing)
+    depends_on:
+      - elasticsearch
+      - kibana
+
+networks:
+  HIL:
+    driver: bridge
