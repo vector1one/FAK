@@ -4,8 +4,8 @@ Components of a Fly Away Kit
 
 this will include coscker coplse cripts for 3 variations of FAK
 
-0 -  sensor node 
+HIL - Happy Injestion Land 
 
-1 - main deployment FAK
+HOL - Happy Operations Land
 
-2 - Heavy, leave behind FAK
+HAL - Happy Applications Land
