@@ -10,6 +10,22 @@ services:
       - NET_ADMIN
     volumes:
       - ./logs:/logs
-    ports:
-      - "47760:47760"
     command: ["zeek", "-i", "eth0"]
+
+
+    services:
+  suricata:
+    image: jasonish/suricata:latest   # Suricata IDS image
+    container_name: suricata-container
+    network_mode: host                # Use the host's network stack (including ens33)
+    restart: always
+    cap_add:
+      - NET_ADMIN                    # Necessary for Suricata to capture network traffic
+    environment:
+      - SURICATA_HOME=/etc/suricata   # Path to Suricata config directory
+    volumes:
+      - ./suricata/config:/etc/suricata   # Mount your custom Suricata config
+      - ./suricata/logs:/var/log/suricata # Mount log directory for Suricata
+      - /etc/suricata/rules:/etc/suricata/rules  # Mount rules directory
+    command: ["suricata", "-c", "/etc/suricata/suricata.yaml", "-i", "ens33"]  # Use ens33 interface
+
