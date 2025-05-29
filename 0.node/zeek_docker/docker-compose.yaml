@@ -10,7 +10,7 @@ services:
       - NET_ADMIN
     volumes:
       - ./logs:/logs
-    command: ["zeek", "-i", "eth0"]
+    command: ["zeek", "-i", "ens33"]
 
 
   suricata:
