@@ -1,0 +1,5 @@
+HAL = Happy Application land serves an a splash page for a docker deployment, configured for CPT, SOC and homelab(HL) use.
+	Basic HAL deployment
+	-Homer
+	-Portainer
+	and grow from there depending on use case 
